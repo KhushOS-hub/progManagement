@@ -1,0 +1,18 @@
+{
+  "name": "prog_management",
+  "version": "1.0.0",
+  "description": "A scalable project management backend",
+  "keywords": [
+    "backend",
+    "API",
+    "creation"
+  ],
+  "license": "ISC",
+  "author": "Kusagra Gupta",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js",
+    "start": "nodemon index.js"
+  }
+}
