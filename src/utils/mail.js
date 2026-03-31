@@ -57,7 +57,7 @@ const emailVerificationMailgen = (username, verificationURL) => {
     }
 }
 
-import Mailgen from "mailgen";
+
 
 const forgotPasswordMailgen = (username, passwordReseteURL) => {
     return {

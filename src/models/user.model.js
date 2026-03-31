@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import crypto from "crypto"
 
-const userSchema = new Schema(
+const userSchema = new mongoose.Schema(
     {
         avatar: {
             type: {
@@ -30,7 +30,7 @@ const userSchema = new Schema(
             trim: true
         },
         fullName: {
-            typw: String,
+            type: String,
             trim: true
         },
         password: {
