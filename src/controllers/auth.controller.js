@@ -6,15 +6,31 @@ import { emailVerificationMailgen, sendEmail } from "../utils/mail.js"
 
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
-        const user = await User.findById(userId)
-        const accessToken = user.generateAccessToken()
-        const refreshToken = user.generateRefreshToken()
-
-        user.refreshToken = refreshToken
-        await user.save({ validateBeforeSave: false })
-        return { accessToken, refreshToken }
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new ApiError(404, "User not found");
+        }
+        
+        // Log to see if user is found
+        console.log("User found:", user._id);
+        
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
+        
+        console.log("Tokens generated successfully");
+        
+        user.refreshToken = refreshToken;
+        await user.save({ validateBeforeSave: false });
+        
+        return { accessToken, refreshToken };
     } catch (error) {
-        throw new ApiError(500, "Something went wrong while generating refresh token");
+        // Log the actual error
+        console.error("Token generation error:", error);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+        
+        // Throw with the actual error message
+        throw new ApiError(500, `Something went wrong: ${error.message}`);
     }
 }
 const registerUser = asyncHandler(async (req, res) => {
@@ -63,34 +79,35 @@ const registerUser = asyncHandler(async (req, res) => {
             "User registered successfully and verification email has been sent on your email"))
 })
 
-const login = asyncHandler(async (req,res) => {
-    const {email, password, username} = req.body
+const login = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
 
     if (!email) {
         throw new ApiError(400, "User email is required");
     }
 
-    const user = await User.findOne({email})
+    const user = await User.findOne({ email });
 
-    if (condition) {
+    if (!user) {
         throw new ApiError(400, "User doesn't exist");
     }
 
-    const isPasswordValid = await user.isPasswordCorrect(password)
+    const isPasswordValid = await user.isPasswordCorrect(password);
 
     if (!isPasswordValid) {
-        throw new ApiError(400, "Invalid credentials"); 
+        throw new ApiError(400, "Invalid credentials");
     }
 
-    const accessAndRefresh = await generateAccessAndRefreshTokens(user._id)
+    const { accessToken, refreshToken } =
+        await generateAccessAndRefreshTokens(user._id);
 
     const loggedInUser = await User.findById(user._id)
-        .select("-password -refreshToken -emailVerificationToken -emailExpiryToken")
+        .select("-password -refreshToken -emailVerificationToken -emailExpiryToken");
 
     const options = {
         httpOnly: true,
-        secure: true
-    }
+        secure: process.env.NODE_ENV === "production",
+    };
 
     return res
         .status(200)
@@ -102,12 +119,11 @@ const login = asyncHandler(async (req,res) => {
                 {
                     user: loggedInUser,
                     accessToken,
-                    refreshToken
+                    refreshToken,
                 },
                 "User logged in successfully"
             )
-        )
-
-})
+        );
+});
 
 export { registerUser, login }
