@@ -10,25 +10,22 @@ const generateAccessAndRefreshTokens = async (userId) => {
         if (!user) {
             throw new ApiError(404, "User not found");
         }
-        
-        // Log to see if user is found
-        console.log("User found:", user._id);
-        
+
         const accessToken = user.generateAccessToken();
         const refreshToken = user.generateRefreshToken();
-        
+
         console.log("Tokens generated successfully");
-        
+
         user.refreshToken = refreshToken;
         await user.save({ validateBeforeSave: false });
-        
+
         return { accessToken, refreshToken };
     } catch (error) {
         // Log the actual error
         console.error("Token generation error:", error);
         console.error("Error message:", error.message);
         console.error("Error stack:", error.stack);
-        
+
         // Throw with the actual error message
         throw new ApiError(500, `Something went wrong: ${error.message}`);
     }
@@ -126,4 +123,34 @@ const login = asyncHandler(async (req, res) => {
         );
 });
 
-export { registerUser, login }
+const logoutUser = asyncHandler(async (req, res) => {
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                refreshToken: ""
+            },
+
+        },
+
+        {
+            returnDocument: "after"
+        }
+    )
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res
+        .status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(
+            new ApiResponse(200, {}, "User logged out")
+        )
+
+})
+
+export { registerUser, login, logoutUser }
